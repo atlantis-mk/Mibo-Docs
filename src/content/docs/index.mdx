@@ -1,34 +1,34 @@
 ---
-title: Mibo Docs
-description: Tutorials and reference documentation for Mibo.
+title: Mibo 文档
+description: Mibo 的教程和参考文档。
 template: splash # Remove or comment out this line to display the site sidebar on this page.
 hero:
-  tagline: Learn how to install, configure, and operate your Mibo media system.
+  tagline: 学习如何安装、配置和运维你的 Mibo 媒体系统。
   actions:
-    - text: Install Mibo
-      link: /getting-started/install/
+    - text: 安装 Mibo
+      link: /Mibo-Docs/getting-started/install/
       icon: right-arrow
-    - text: First Library
-      link: /getting-started/first-library/
+    - text: 创建第一个媒体库
+      link: /Mibo-Docs/getting-started/first-library/
       icon: open-book
       variant: minimal
 ---
 
 import { Card, CardGrid } from '@astrojs/starlight/components';
 
-## Start here
+## 从这里开始
 
 <CardGrid stagger>
-	<Card title="Install Mibo" icon="rocket">
-		Set up the frontend and backend services for local development or deployment.
+	<Card title="安装 Mibo" icon="rocket">
+		配置前端和后端服务，用于本地开发或正式部署。
 	</Card>
-	<Card title="Create your first library" icon="folder">
-		Add media roots, scan content, and confirm that library visibility is correct.
+	<Card title="创建第一个媒体库" icon="folder">
+		添加媒体根目录、扫描内容，并确认媒体库可见性配置正确。
 	</Card>
-	<Card title="Manage playback" icon="play">
-		Understand playback sources, quality selection, and transcoding behavior.
+	<Card title="管理播放" icon="play">
+		了解播放源、画质选择和转码行为。
 	</Card>
-	<Card title="Extend providers" icon="setting">
-		Use the provider plugin protocol to add metadata or storage integrations.
+	<Card title="扩展 Provider" icon="setting">
+		使用 Provider 插件协议接入元数据或存储服务。
 	</Card>
 </CardGrid>

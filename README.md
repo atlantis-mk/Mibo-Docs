@@ -36,3 +36,11 @@ link. Static assets, like favicons, can be placed in `public/`.
 | `pnpm preview`             | Previews the production build locally            |
 | `pnpm astro ...`           | Runs Astro CLI commands                          |
 | `pnpm astro -- --help` | Get help using the Astro CLI                     |
+
+## Deployment
+
+The site is deployed to GitHub Pages at
+`https://atlantis-mk.github.io/Mibo-Docs/`.
+
+Pushing to the `main` branch runs `.github/workflows/deploy.yml`, which builds
+the Astro site and publishes it with GitHub Pages.
