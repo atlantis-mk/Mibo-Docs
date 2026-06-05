@@ -4,21 +4,31 @@ import starlight from '@astrojs/starlight';
 
 // https://astro.build/config
 export default defineConfig({
+	site: 'https://atlantis-mk.github.io/Mibo-Docs/',
 	integrations: [
 		starlight({
-			title: 'My Docs',
-			social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/withastro/starlight' }],
+			title: 'Mibo Docs',
+			social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/atlantis-mk/Mibo' }],
 			sidebar: [
 				{
-					label: 'Guides',
+					label: 'Getting Started',
 					items: [
-						// Each item here is one entry in the navigation menu.
-						{ label: 'Example Guide', slug: 'guides/example' },
+						{ label: 'Install Mibo', slug: 'getting-started/install' },
+						{ label: 'First Library', slug: 'getting-started/first-library' },
+					],
+				},
+				{
+					label: 'User Guides',
+					items: [
+						{ label: 'Library Management', slug: 'guides/library-management' },
+						{ label: 'Playback', slug: 'guides/playback' },
 					],
 				},
 				{
 					label: 'Reference',
-					items: [{ autogenerate: { directory: 'reference' } }],
+					items: [
+						{ label: 'Provider Plugins', slug: 'reference/provider-plugins' },
+					],
 				},
 			],
 		}),
