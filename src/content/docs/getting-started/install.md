@@ -97,6 +97,210 @@ cd C:\mibo
 如果 Windows Defender SmartScreen 对下载的二进制文件发出提醒，请先确认文件来自
 Mibo 官方 Release 页面，再允许它运行。
 
+## 设置开机启动
+
+把 Mibo 加入开机启动前，建议先在终端里手动运行一次，确认浏览器可以打开
+<http://127.0.0.1:8096>。下面的示例都会把工作目录固定到安装目录，这样默认的
+`data/` 目录会稳定保存在同一个位置。
+
+如果你的媒体目录或 `ffprobe` 只对某个用户可见，请让启动项使用同一个用户运行；服务启动
+环境通常不会继承你终端里的完整 `PATH`，必要时把 `MIBO_FFPROBE_PATH` 改成绝对路径。
+
+### Linux systemd
+
+下面的示例假设 Mibo 安装在 `/opt/mibo`，并使用当前登录用户运行服务。先移动文件并确认
+权限：
+
+```sh
+sudo mkdir -p /opt/mibo
+sudo cp ~/mibo/mibo-server /opt/mibo/
+sudo chown -R "$USER":"$USER" /opt/mibo
+chmod +x /opt/mibo/mibo-server
+```
+
+创建 systemd 服务文件：
+
+```sh
+sudo tee /etc/systemd/system/mibo.service >/dev/null <<EOF
+[Unit]
+Description=Mibo Media Server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=$USER
+WorkingDirectory=/opt/mibo
+ExecStart=/opt/mibo/mibo-server
+Restart=on-failure
+RestartSec=5
+Environment=MIBO_HTTP_ADDR=:8096
+Environment=MIBO_DATABASE_DRIVER=sqlite
+Environment=MIBO_DATABASE_DSN=data/mibo.db
+Environment=MIBO_FFPROBE_ENABLED=true
+Environment=MIBO_FFPROBE_PATH=ffprobe
+Environment=MIBO_WORKER_ENABLED=true
+
+[Install]
+WantedBy=multi-user.target
+EOF
+```
+
+启用并启动服务：
+
+```sh
+sudo systemctl daemon-reload
+sudo systemctl enable --now mibo
+systemctl status mibo
+```
+
+查看日志：
+
+```sh
+journalctl -u mibo -f
+```
+
+如果要停止开机启动：
+
+```sh
+sudo systemctl disable --now mibo
+```
+
+### macOS launchd
+
+下面的示例使用 LaunchAgent，在当前用户登录后自动启动 Mibo。先确认安装目录和执行权限：
+
+```sh
+mkdir -p ~/mibo
+chmod +x ~/mibo/mibo-server
+mkdir -p ~/Library/LaunchAgents ~/Library/Logs
+```
+
+创建 `~/Library/LaunchAgents/com.mibo.server.plist`：
+
+```sh
+cat > ~/Library/LaunchAgents/com.mibo.server.plist <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.mibo.server</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>$HOME/mibo/mibo-server</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string>$HOME/mibo</string>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <true/>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>MIBO_HTTP_ADDR</key>
+    <string>:8096</string>
+    <key>MIBO_DATABASE_DRIVER</key>
+    <string>sqlite</string>
+    <key>MIBO_DATABASE_DSN</key>
+    <string>data/mibo.db</string>
+    <key>MIBO_FFPROBE_ENABLED</key>
+    <string>true</string>
+    <key>MIBO_FFPROBE_PATH</key>
+    <string>ffprobe</string>
+    <key>MIBO_WORKER_ENABLED</key>
+    <string>true</string>
+  </dict>
+  <key>StandardOutPath</key>
+  <string>$HOME/Library/Logs/mibo.log</string>
+  <key>StandardErrorPath</key>
+  <string>$HOME/Library/Logs/mibo.err.log</string>
+</dict>
+</plist>
+EOF
+```
+
+加载并启动：
+
+```sh
+launchctl load ~/Library/LaunchAgents/com.mibo.server.plist
+launchctl start com.mibo.server
+```
+
+查看日志：
+
+```sh
+tail -f ~/Library/Logs/mibo.log ~/Library/Logs/mibo.err.log
+```
+
+如果要停止开机启动：
+
+```sh
+launchctl unload ~/Library/LaunchAgents/com.mibo.server.plist
+```
+
+如果你希望 Mac 在没有用户登录时也启动 Mibo，可以把它改成 LaunchDaemon；这种方式需要把
+文件放到 `/Library/LaunchDaemons/` 并用明确的系统用户运行。
+
+### Windows 任务计划程序
+
+下面的示例使用 Windows 任务计划程序，在当前用户登录后自动启动 Mibo。请用 PowerShell
+运行：
+
+```powershell
+$action = New-ScheduledTaskAction `
+  -Execute "C:\mibo\mibo-server.exe" `
+  -WorkingDirectory "C:\mibo"
+$trigger = New-ScheduledTaskTrigger -AtLogOn
+$settings = New-ScheduledTaskSettingsSet `
+  -RestartCount 3 `
+  -RestartInterval (New-TimeSpan -Minutes 1) `
+  -AllowStartIfOnBatteries
+
+Register-ScheduledTask `
+  -TaskName "Mibo Media Server" `
+  -Action $action `
+  -Trigger $trigger `
+  -Settings $settings `
+  -Description "Start Mibo Media Server when the user signs in"
+```
+
+立即启动任务：
+
+```powershell
+Start-ScheduledTask -TaskName "Mibo Media Server"
+```
+
+如果要设置环境变量，可以先创建 `C:\mibo\start-mibo.ps1`：
+
+```powershell
+$env:MIBO_HTTP_ADDR=":8096"
+$env:MIBO_DATABASE_DRIVER="sqlite"
+$env:MIBO_DATABASE_DSN="data/mibo.db"
+$env:MIBO_FFPROBE_ENABLED="true"
+$env:MIBO_FFPROBE_PATH="ffprobe"
+$env:MIBO_WORKER_ENABLED="true"
+Set-Location "C:\mibo"
+.\mibo-server.exe
+```
+
+然后把任务动作改成运行这个脚本：
+
+```powershell
+$action = New-ScheduledTaskAction `
+  -Execute "powershell.exe" `
+  -Argument "-NoProfile -ExecutionPolicy Bypass -File C:\mibo\start-mibo.ps1" `
+  -WorkingDirectory "C:\mibo"
+Set-ScheduledTask -TaskName "Mibo Media Server" -Action $action
+```
+
+如果要停止开机启动：
+
+```powershell
+Unregister-ScheduledTask -TaskName "Mibo Media Server" -Confirm:$false
+```
+
 ## 打开 Mibo
 
 服务启动后，在浏览器中打开：
